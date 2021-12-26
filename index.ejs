@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YtDown</title>
+
+    <!-- My CSS -->
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Girassol&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <input type="text" class="URL-input" placeholder="Paste Video URL">
+    <button class="download-button">Download</button>
+    
+    <script>
+      var downloadButton = document.querySelector(".download-button");
+      var URLinput = document.querySelector(".URL-input");
+
+      downloadButton.addEventListener("click", function() {
+        console.log(`URL: ${URLinput.value}`);
+        sendURL(URLinput.value);
+      });
+
+      function sendURL(URL) {
+        window.location.href = `http://localhost:3000/download?URL=${URL}`;
+      }
+    </script>
+  </body>
+</html>
