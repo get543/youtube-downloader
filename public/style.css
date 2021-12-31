@@ -8,10 +8,11 @@ body {
     font-family: 'Girassol', cursive;
     background-image: url(./480381063.jpg);
     background-size: cover;
-}
-
-.heading {
-    margin-top: 300px;
+    position: relative;
+    align-content: center;
+    padding-top: 20%;
+    padding-left: 15%;
+    padding-right: 15%;
 }
 
 .URL-input, .download-button {
@@ -22,12 +23,12 @@ body {
 
 .URL-input {
     border-radius: 8px;
-    width: 300px;
+    width: 40%;
     border: 2px solid rgba(255, 255, 255, 0.568);
     background: rgba(192, 190, 190, 0.568);
     outline: none;
-    margin-left: 38%;
-    margin-top: 24%;
+    margin-left: 18%; 
+    text-align: center;
 }
 
 .URL-input:focus {
@@ -39,7 +40,6 @@ body {
     border: 2px solid rgba(8, 211, 160, 0.933);
     background: rgba(17, 112, 221, 0.933);
     color: white;
-
     box-shadow: 0 0 40px 40px #3498db inset, 0 0 0 0 #3498db;
     transition: all 150ms ease-in-out;
 }

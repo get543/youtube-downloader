@@ -8,9 +8,9 @@ const port = 3000;
 
 
 app.set('view engine', 'ejs');
-app.set('views', __dirname)
+app.set('views', 'pages');
 
-app.use(express.static(__dirname));
+app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
@@ -19,7 +19,7 @@ app.listen(port, () => {
 });
 
 app.get('/', (req, res) => {
-    res.render('index');
+    res.render('download');
 });
 
 app.get('/download', (req, res) => {
@@ -32,6 +32,7 @@ app.get('/download', (req, res) => {
             filter: format => format.container === 'mp4',
         }).pipe(res);
     } catch (error) {
+        console.log(`ups there's an error apperently!`);
         console.log(error);
     };
 });
