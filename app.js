@@ -30,6 +30,8 @@ app.get('/download', (req, res) => {
     
         ytdl(URL, {
             filter: format => format.container === 'mp4',
+            filter: 'audioandvideo',
+            quality: 'highestvideo'
         }).pipe(res);
     } catch (error) {
         console.log(`ups there's an error apperently!`);
