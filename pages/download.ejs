@@ -19,13 +19,25 @@
       var downloadButton = document.querySelector(".download-button");
       var URLinput = document.querySelector(".URL-input");
 
+      URLinput.onkeypress = function(e) {
+        if (!e) e = window.event;
+        var keyCode = e.code || e.key;
+        if (keyCode == 'Enter') {
+          // Enter pressed
+          console.log(`URL: ${URLinput.value}`);
+          sendURL(URLinput.value);
+          
+          return false;
+        }
+      }
+
       downloadButton.addEventListener("click", function() {
         console.log(`URL: ${URLinput.value}`);
         sendURL(URLinput.value);
       });
 
       function sendURL(URL) {
-        window.location.href = `http://localhost:3000/download?URL=${URL}`;
+        window.location.href = `https://yt-downbad.herokuapp.com/download?URL=${URL}`;
       }
     </script>
   </body>

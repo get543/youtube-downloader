@@ -4,8 +4,7 @@ const ytdl = require('ytdl-core');
 const { render } = require('ejs');
 
 const app = express();
-const port = 3000;
-
+const port = process.env.PORT || 8080;
 
 app.set('view engine', 'ejs');
 app.set('views', 'pages');
@@ -25,16 +24,17 @@ app.get('/', (req, res) => {
 app.get('/download', (req, res) => {
     try {
         var URL = req.query.URL;
+        var title = "Enter your own video title";
 
-        res.header('Content-Disposition', 'attachment; filename="video.mp4"');
-    
+        res.header('Content-Disposition', 'attachment; filename=' + title + '.mp4');
+
         ytdl(URL, {
             filter: format => format.container === 'mp4',
             filter: 'audioandvideo',
-            quality: 'highestvideo'
+            quality: 'highestvideo',
         }).pipe(res);
     } catch (error) {
-        console.log(`ups there's an error apperently!`);
+        console.log(`===> ups there's an error apperently! <====`);
         console.log(error);
     };
 });
