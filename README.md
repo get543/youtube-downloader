@@ -14,4 +14,4 @@ npm start
 3. open browser and go this link http://localhost:3000
 
 ### Note
-if you want to host it somewhere you need to change the url `line 40` in the `download.ejs` file
+if you want to host it somewhere you need to change the url `line 40` in the `/pages/download.ejs`
