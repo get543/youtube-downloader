@@ -21,12 +21,17 @@ app.get('/', (req, res) => {
     res.render('download');
 });
 
-app.get('/download', (req, res) => {
+app.get('/download', async (req, res) => {
     try {
-        var URL = req.query.URL;
-        var title = "Enter your own video title";
+        const URL = req.query.URL;
+        
+        const video_info = await ytdl.getInfo(URL);
+        
+        const video_title = video_info.videoDetails.title;
+         
+        res.header('Content-Disposition', 'attachment; filename=' + video_title + '.mp4');
 
-        res.header('Content-Disposition', 'attachment; filename=' + title + '.mp4');
+        // res.header('Content-Length', 'attachment; filesize=' + video_size + 'MB');
 
         ytdl(URL, {
             filter: format => format.container === 'mp4',
@@ -34,7 +39,7 @@ app.get('/download', (req, res) => {
             quality: 'highestvideo',
         }).pipe(res);
     } catch (error) {
-        console.log(`===> ups there's an error apperently! <====`);
+        console.log(`===> oops there's an error apperently! <====`);
         console.log(error);
     };
 });
