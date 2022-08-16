@@ -32,7 +32,10 @@ app.get("/download", async (req, res) => {
     // const video_size = video_info.formats.filter((item) => item.container === "mp4");
     // console.log(video_size);
 
-    res.header("Content-Disposition", "attachment; filename=" + video_title + ".mp4");
+    res.header(
+      "Content-Disposition",
+      "attachment; filename=" + video_title + ".mp4"
+    );
 
     // res.header("Content-Length", "attachment; filesize=" + video_size + " MB");
 

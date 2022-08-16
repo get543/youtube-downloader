@@ -7,38 +7,41 @@
     <title>YtDown</title>
 
     <!-- My CSS -->
-    <link rel="icon" href="icons/favicon.ico"/>
+    <link rel="icon" href="icons/favicon.ico" />
     <link rel="stylesheet" href="style.css" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Girassol&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Girassol&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
-    <input type="text" class="URL-input" placeholder="Paste Video URL">
+    <input type="text" class="URL-input" placeholder="Paste Video URL" />
     <button class="download-button">Download</button>
-    
-    <script>
-      var downloadButton = document.querySelector(".download-button");
-      var URLinput = document.querySelector(".URL-input");
 
-      URLinput.onkeypress = function(e) {
+    <script>
+      var downloadButton = document.querySelector('.download-button');
+      var URLinput = document.querySelector('.URL-input');
+
+      URLinput.onkeypress = function (e) {
         if (!e) e = window.event;
         var keyCode = e.code || e.key;
         if (keyCode == 'Enter') {
           // Enter pressed
           console.log(`URL: ${URLinput.value}`);
           sendURL(URLinput.value);
-          
+
           return false;
         }
-      }
+      };
 
-      downloadButton.addEventListener("click", function() {
+      downloadButton.addEventListener('click', function () {
         console.log(`URL: ${URLinput.value}`);
         sendURL(URLinput.value);
       });
 
       function sendURL(URL) {
-        window.location.href = `http://localhost:3000/download?URL=${URL}`;
+        window.location.href = `${process.env.home}/download?URL=${URL}`;
       }
     </script>
   </body>
