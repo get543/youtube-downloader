@@ -10,24 +10,22 @@
     <link rel="icon" href="favicon.ico" />
     <link rel="stylesheet" href="style.css" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Girassol&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Girassol&display=swap" rel="stylesheet" />
   </head>
   <body>
     <input type="text" class="URL-input" placeholder="Paste Video URL" />
     <button class="download-button">Download</button>
 
     <script>
-      const downloadButton = document.querySelector('.download-button');
-      const URLinput = document.querySelector('.URL-input');
+      const downloadButton = document.querySelector(".download-button");
+      const URLinput = document.querySelector(".URL-input");
 
       URLinput.onkeypress = function (e) {
-        if (!e) e = window.event;        
+        if (!e) e = window.event;
         const keyCode = e.code || e.key;
-        if (keyCode == 'Enter') {
-          // Enter key pressed
+
+        // Enter key pressed
+        if (keyCode == "Enter") {
           console.log(`URL: ${URLinput.value}`);
           sendURL(URLinput.value);
 
@@ -35,13 +33,14 @@
         }
       };
 
-      downloadButton.addEventListener('click', function () {
+      downloadButton.addEventListener("click", function () {
         console.log(`URL: ${URLinput.value}`);
         sendURL(URLinput.value);
       });
 
       function sendURL(URL) {
-        window.location.href = `http://localhost:3000/download?URL=${URL}`;
+        window.location.href = `${window.location.href}download?URL=${URL}`;
+        // window.location.href = `http://localhost:3000/download?URL=${URL}`;
       }
     </script>
   </body>
