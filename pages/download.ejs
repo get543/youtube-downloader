@@ -20,14 +20,14 @@
     <button class="download-button">Download</button>
 
     <script>
-      var downloadButton = document.querySelector('.download-button');
-      var URLinput = document.querySelector('.URL-input');
+      const downloadButton = document.querySelector('.download-button');
+      const URLinput = document.querySelector('.URL-input');
 
       URLinput.onkeypress = function (e) {
-        if (!e) e = window.event;
-        var keyCode = e.code || e.key;
+        if (!e) e = window.event;        
+        const keyCode = e.code || e.key;
         if (keyCode == 'Enter') {
-          // Enter pressed
+          // Enter key pressed
           console.log(`URL: ${URLinput.value}`);
           sendURL(URLinput.value);
 

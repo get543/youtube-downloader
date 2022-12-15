@@ -19,4 +19,4 @@ npm start
 
 ### Note
 
-if you want to host it somewhere you need to change the url `line 40` in the `/pages/download.ejs`
+if you want to host it somewhere, you need to change the url `line 44` in the `/pages/download.ejs`
