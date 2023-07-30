@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const ytdl = require("ytdl-core");
-const { render } = require("ejs");
 const contentDisposition = require("content-disposition");
 const contentLength = require("content-length");
 
