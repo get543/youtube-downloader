@@ -33,8 +33,27 @@ app.get("/download", async (req, res) => {
     const video_info = await ytdl.getInfo(URL);
 
     const video_title = video_info.videoDetails.title;
+    const video_size = video_info.formats.map((size) => {
+      const fileSize = (size.contentLength * 0.000001).toFixed(2);
+      const fileResolution = size.qualityLabel;
+      const fileAudio = size.hasAudio;
+      const fileVideo = size.hasVideo;
+      const fileFormat = size.container;
 
-    res.header("Content-Disposition", contentDisposition(`${video_title}.mp4`));
+      const final = fileAudio && fileVideo ? fileSize : false
+
+      console.log(`| ${fileResolution} | ${fileSize} MB | hasAudio: ${fileAudio} | hasVideo: ${fileVideo} | Format: ${fileFormat} |`);
+      return final
+    });
+
+    console.log(video_size[0]);
+
+    res.header({
+      "Content-Disposition": contentDisposition(`${video_title}.mp4`),
+      "Content-Length": contentLength((err, len) => {
+        return len;
+      }),
+    });
 
     ytdl(URL, {
       filter: (format) => format.container === "mp4",
