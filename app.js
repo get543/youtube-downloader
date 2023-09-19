@@ -2,17 +2,12 @@ const express = require("express");
 const cors = require("cors");
 const ytdl = require("ytdl-core");
 const contentDisposition = require("content-disposition");
-const contentLength = require("content-length");
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.set("view engine", "ejs");
 app.set("views", "pages");
-
-app.use(contentLength((err, len) => {
-  console.log(len);
-}));
 
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
@@ -40,19 +35,16 @@ app.get("/download", async (req, res) => {
       const fileVideo = size.hasVideo;
       const fileFormat = size.container;
 
-      const final = fileAudio && fileVideo ? fileSize : false
+      const final = fileAudio && fileVideo ? fileSize : false;
 
-      console.log(`| ${fileResolution} | ${fileSize} MB | hasAudio: ${fileAudio} | hasVideo: ${fileVideo} | Format: ${fileFormat} |`);
-      return final
+      console.log(
+        `| ${fileResolution} | ${fileSize} MB | hasAudio: ${fileAudio} | hasVideo: ${fileVideo} | Format: ${fileFormat} |`
+      );
+      return final;
     });
-
-    console.log(video_size[0]);
 
     res.header({
       "Content-Disposition": contentDisposition(`${video_title}.mp4`),
-      "Content-Length": contentLength((err, len) => {
-        return len;
-      }),
     });
 
     ytdl(URL, {

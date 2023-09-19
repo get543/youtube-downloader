@@ -20,7 +20,7 @@
       const downloadButton = document.querySelector(".download-button");
       const URLinput = document.querySelector(".URL-input");
 
-      URLinput.onkeypress = function (e) {
+      URLinput.onkeypress = (e) => {
         if (!e) e = window.event;
         const keyCode = e.code || e.key;
 
@@ -33,14 +33,13 @@
         }
       };
 
-      downloadButton.addEventListener("click", function () {
+      downloadButton.addEventListener("click", () => {
         console.log(`URL: ${URLinput.value}`);
         sendURL(URLinput.value);
       });
 
       function sendURL(URL) {
         window.location.href = `${window.location.href}download?URL=${URL}`;
-        // window.location.href = `http://localhost:3000/download?URL=${URL}`;
       }
     </script>
   </body>
