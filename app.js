@@ -15,6 +15,7 @@ app.set("views", "pages");
 
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(cors());
 
 app.listen(port, () => {
@@ -58,6 +59,7 @@ async function getYtdlpClient() {
   return ytdlpInstance;
 }
 
+// --- Legacy direct-download endpoint (kept for compatibility) ---
 app.get("/download", async (req, res) => {
   try {
     const URL = req.query.URL;
@@ -86,9 +88,7 @@ app.get("/download", async (req, res) => {
       throw new Error("No downloaded file returned by yt-dlp");
     }
 
-    const filePath = path.isAbsolute(downloadedFile)
-      ? downloadedFile
-      : path.join(tmpDir, downloadedFile);
+    const filePath = path.isAbsolute(downloadedFile) ? downloadedFile : path.join(tmpDir, downloadedFile);
 
     const filename = path.basename(filePath);
     const stats = await fs.stat(filePath);
@@ -120,5 +120,141 @@ app.get("/download", async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).send("Server error");
+  }
+});
+
+
+// --- New: start-download + SSE progress + file serving ---
+const downloads = new Map(); // id -> { status, tmpDir, filePath, filename, progress }
+const sseClients = new Map(); // id -> Set<res>
+
+function broadcastSse(id, event, data) {
+  const clients = sseClients.get(id);
+  if (!clients) return;
+  const payload = typeof data === "string" ? data : JSON.stringify(data);
+  for (const res of clients) {
+    try {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${payload}\n\n`);
+    } catch (e) {
+      // ignore write errors
+    }
+  }
+}
+
+app.post("/start-download", async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: "Missing url" });
+
+    const id = (globalThis.crypto && crypto.randomUUID && crypto.randomUUID()) || require("crypto").randomUUID();
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "yt-dlp-"));
+    downloads.set(id, { status: "starting", tmpDir, filePath: null, filename: null, progress: null });
+
+    // start async download (don't await)
+    (async () => {
+      try {
+        const ytdlp = await getYtdlpClient();
+        const outputTemplate = path.join(tmpDir, "%(title)s.%(ext)s");
+
+        const builder = ytdlp
+          .download(url)
+          .filter("mergevideo")
+          .quality("highest")
+          .type("mp4")
+          .options({ mergeOutputFormat: "mp4", embedChapters: true })
+          .embedThumbnail()
+          .embedSubs()
+          .output(outputTemplate)
+          .on("progress", (p) => {
+            // p includes percentage_str, eta_str, speed_str, etc.
+            downloads.get(id).progress = p;
+            console.log(`Download ${id} progress: ${p.percentage_str} ETA: ${p.eta_str} Speed: ${p.speed_str}`);
+            broadcastSse(id, "progress", p);
+          })
+          .on("beforeDownload", (info) => {
+            // info has title, filepath etc
+            downloads.get(id).filename = info.filename || info.title;
+            broadcastSse(id, "info", { title: info.title || info.filename });
+          });
+
+        downloads.get(id).status = "running";
+        broadcastSse(id, "started", { id });
+
+        const result = await builder.run();
+        const fileFound = result.filePaths && result.filePaths[0];
+        const filePath = fileFound ? (path.isAbsolute(fileFound) ? fileFound : path.join(tmpDir, fileFound)) : null;
+        downloads.get(id).filePath = filePath;
+        downloads.get(id).status = filePath ? "done" : "error";
+
+        broadcastSse(id, "done", { id, filePath, fileName: path.basename(filePath || "") });
+        console.log(`Download ${id} finished. File: ${filePath}`);
+      } catch (err) {
+        console.error(`Download ${id} failed:`, err);
+        const rec = downloads.get(id);
+        if (rec) rec.status = "error";
+        broadcastSse(id, "error", { message: String(err) });
+      }
+    })();
+
+    return res.json({ id });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/progress/:id", (req, res) => {
+  const { id } = req.params;
+  // SSE response
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders && res.flushHeaders();
+
+  if (!sseClients.has(id)) sseClients.set(id, new Set());
+  sseClients.get(id).add(res);
+
+  // send current state if any
+  const info = downloads.get(id);
+  if (info) {
+    if (info.progress) broadcastSse(id, "progress", info.progress);
+    broadcastSse(id, "status", { status: info.status });
+  }
+
+  req.on("close", () => {
+    const set = sseClients.get(id);
+    if (set) {
+      set.delete(res);
+      if (set.size === 0) sseClients.delete(id);
+    }
+  });
+});
+
+app.get("/file/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const rec = downloads.get(id);
+    if (!rec) return res.status(404).send("Not found");
+    if (rec.status !== "done" || !rec.filePath) return res.status(404).send("File not ready");
+
+    const filename = path.basename(rec.filePath);
+    res.setHeader("Content-Disposition", contentDisposition(filename));
+    res.setHeader("Content-Type", "application/octet-stream");
+
+    const stream = fsSync.createReadStream(rec.filePath);
+    stream.on("end", async () => {
+      // cleanup temp dir after serving
+      try {
+        await fs.rm(rec.tmpDir, { recursive: true, force: true });
+      } catch (e) {
+        console.error("cleanup failed", e);
+      }
+      downloads.delete(id);
+    });
+    stream.pipe(res);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
   }
 });
