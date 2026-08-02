@@ -26,20 +26,25 @@
 
         // Enter key pressed
         if (keyCode == "Enter") {
-          console.log(`URL: ${URLinput.value}`);
-          sendURL(URLinput.value);
+          const url = URLinput.value.trim();
+          if (!url) return false;
+          console.log(`URL: ${url}`);
+          sendURL(url);
 
           return false;
         }
       };
 
       downloadButton.addEventListener("click", () => {
-        console.log(`URL: ${URLinput.value}`);
-        sendURL(URLinput.value);
+        const url = URLinput.value.trim();
+        if (!url) return;
+        console.log(`URL: ${url}`);
+        sendURL(url);
       });
 
       function sendURL(URL) {
-        window.location.href = `${window.location.href}download?URL=${URL}`;
+        // Use origin to ensure proper absolute path and encode the URL parameter
+        window.location.href = `${window.location.origin}/download?URL=${encodeURIComponent(URL)}`;
       }
     </script>
   </body>

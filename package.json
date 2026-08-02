@@ -1,10 +1,10 @@
 {
   "name": "youtube-downloader",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "website for downloading youtube videos",
   "main": "app.js",
   "engines": {
-    "node": "18.x"
+    "node": ">=20.x"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -17,6 +17,6 @@
     "cors": "^2.8.5",
     "ejs": "^3.1.6",
     "express": "^4.17.2",
-    "ytdl-core": "^4.11.2"
+    "ytdlp-nodejs": "^3.4.5"
   }
 }

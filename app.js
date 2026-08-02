@@ -1,7 +1,11 @@
 const express = require("express");
 const cors = require("cors");
-const ytdl = require("ytdl-core");
+const { YtDlp, helpers } = require("ytdlp-nodejs");
 const contentDisposition = require("content-disposition");
+const path = require("path");
+const os = require("os");
+const fs = require("fs/promises");
+const fsSync = require("fs");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -21,38 +25,100 @@ app.get("/", (req, res) => {
   res.render("download");
 });
 
+let ytdlpInstance;
+
+async function getYtdlpClient() {
+  if (ytdlpInstance) return ytdlpInstance;
+
+  const binaryPath = helpers.findYtdlpBinary() || (await helpers.downloadYtDlp());
+  if (!binaryPath) {
+    throw new Error("yt-dlp binary could not be found or downloaded");
+  }
+
+  let ffmpegPath = helpers.findFFmpegBinary();
+  if (!ffmpegPath) {
+    try {
+      ffmpegPath = await helpers.downloadFFmpeg();
+    } catch (downloadError) {
+      console.warn("Could not download ffmpeg automatically:", downloadError);
+    }
+  }
+
+  if (!ffmpegPath) {
+    throw new Error("FFmpeg binary could not be found or downloaded; merging requires ffmpeg");
+  }
+
+  ytdlpInstance = new YtDlp({ binaryPath, ffmpegPath });
+
+  const isInstalled = await ytdlpInstance.checkInstallationAsync({ ffmpeg: true });
+  if (!isInstalled) {
+    throw new Error("yt-dlp or ffmpeg is not installed or available");
+  }
+
+  return ytdlpInstance;
+}
+
 app.get("/download", async (req, res) => {
   try {
     const URL = req.query.URL;
+    if (!URL) return res.status(400).send("Missing URL parameter");
 
-    const video_info = await ytdl.getInfo(URL);
+    const ytdlp = await getYtdlpClient();
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "yt-dlp-"));
+    const outputTemplate = path.join(tmpDir, "%(title)s.%(ext)s");
 
-    const video_title = video_info.videoDetails.title;
-    const video_size = video_info.formats.map((size) => {
-      const fileSize = (size.contentLength * 0.000001).toFixed(2);
-      const fileResolution = size.qualityLabel;
-      const fileAudio = size.hasAudio;
-      const fileVideo = size.hasVideo;
-      const fileFormat = size.container;
+    const downloadBuilder = ytdlp
+      .download(URL)
+      .filter("mergevideo")
+      .quality("highest")
+      .type("mp4")
+      .options({
+        mergeOutputFormat: "mp4",
+        embedChapters: true,
+      })
+      .embedThumbnail()
+      .embedSubs()
+      .output(outputTemplate);
 
-      const final = fileAudio && fileVideo ? fileSize : false;
+    const result = await downloadBuilder.run();
+    const downloadedFile = result.filePaths && result.filePaths[0];
+    if (!downloadedFile) {
+      throw new Error("No downloaded file returned by yt-dlp");
+    }
 
-      console.log(
-        `| ${fileResolution} | ${fileSize} MB | hasAudio: ${fileAudio} | hasVideo: ${fileVideo} | Format: ${fileFormat} |`
-      );
-      return final;
+    const filePath = path.isAbsolute(downloadedFile)
+      ? downloadedFile
+      : path.join(tmpDir, downloadedFile);
+
+    const filename = path.basename(filePath);
+    const stats = await fs.stat(filePath);
+    res.setHeader("Content-Disposition", contentDisposition(filename));
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Content-Length", stats.size.toString());
+
+    const readStream = fsSync.createReadStream(filePath);
+    readStream.on("end", async () => {
+      try {
+        await fs.rm(tmpDir, { recursive: true, force: true });
+      } catch (cleanupError) {
+        console.error("Failed to remove temp dir", cleanupError);
+      }
+    });
+    readStream.on("error", async (streamError) => {
+      console.error("Stream error", streamError);
+      try {
+        await fs.rm(tmpDir, { recursive: true, force: true });
+      } catch (cleanupError) {
+        console.error("Failed to remove temp dir after stream error", cleanupError);
+      }
+      if (!res.headersSent) {
+        res.status(500).send("Failed to stream downloaded file");
+      }
     });
 
-    res.header({
-      "Content-Disposition": contentDisposition(`${video_title}.mp4`),
-    });
-
-    ytdl(URL, {
-      filter: (format) => format.container === "mp4",
-      filter: "audioandvideo",
-      quality: "highestvideo",
-    }).pipe(res);
+    readStream.pipe(res);
   } catch (error) {
     console.error(error);
+    return res.status(500).send("Server error");
   }
 });
