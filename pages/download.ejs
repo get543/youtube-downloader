@@ -9,25 +9,35 @@
     <!-- My CSS -->
     <link rel="icon" href="favicon.ico" />
     <link rel="stylesheet" href="style.css" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Girassol&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lato&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
-    <input type="text" class="URL-input" placeholder="Paste Video URL" />
-    <button class="download-button">Download</button>
+    <ul class="ul-list">
+      <li>
+        <input type="text" class="URL-input" placeholder="Paste Video URL" />
+        <button class="download-button">Download</button>
+      </li>
 
-    <!-- Minimal progress UI (keeps original layout) -->
-    <div class="progress-ui" style="margin-top:12px; display:none; text-align:center;">
-      <progress id="pd-progress" value="0" max="100" style="width:60%; height:12px;"></progress>
-      <div id="pd-status" style="margin-top:6px; color:#fff; font-size:13px;"></div>
-    </div>
+      <li>
+        <!-- Minimal progress UI (keeps original layout) -->
+        <div class="progress-ui">
+          <progress id="pd-progress" value="0" max="100"></progress>
+          <div id="pd-status"></div>
+        </div>
+      </li>
+    </ul>
 
     <script>
       const downloadButton = document.querySelector(".download-button");
       const URLinput = document.querySelector(".URL-input");
-      const progressUI = document.querySelector('.progress-ui');
-      const progressBar = document.getElementById('pd-progress');
-      const progressStatus = document.getElementById('pd-status');
+      const progressUI = document.querySelector(".progress-ui");
+      const progressBar = document.getElementById("pd-progress");
+      const progressStatus = document.getElementById("pd-status");
 
       function setBusy(isBusy) {
         downloadButton.disabled = isBusy;
@@ -55,78 +65,83 @@
 
       async function startDownload(url) {
         setBusy(true);
-        progressUI.style.display = 'block';
+        progressUI.style.display = "block";
         progressBar.value = 0;
-        progressStatus.textContent = 'Starting...';
+        progressStatus.textContent = "Starting...";
 
         try {
-          const resp = await fetch('/start-download', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          const resp = await fetch("/start-download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url }),
           });
-          if (!resp.ok) throw new Error('Failed to start');
+          if (!resp.ok) throw new Error("Failed to start");
           const { id } = await resp.json();
-          console.log('Download id:', id);
+          console.log("Download id:", id);
 
           const es = new EventSource(`/progress/${id}`);
 
-          es.addEventListener('progress', (ev) => {
+          es.addEventListener("progress", (ev) => {
             try {
               const p = JSON.parse(ev.data);
               // prefer percentage numeric, fallback to percentage_str
-              const perc = p.percentage || (p.percentage_str ? Number((p.percentage_str + '').replace('%','')) : 0);
+              const perc = p.percentage || (p.percentage_str ? Number((p.percentage_str + "").replace("%", "")) : 0);
               if (perc) progressBar.value = Math.round(perc);
-              let label = p.percentage_str || (perc ? perc + '%' : '');
+              let label = p.percentage_str || (perc ? perc + "%" : "");
               if (p.eta_str) label += ` • ETA ${p.eta_str}`;
               if (p.speed_str) label += ` • ${p.speed_str}`;
               progressStatus.textContent = label;
               console.log(`Progress: ${label}`);
             } catch (e) {
-              console.log('Malformed progress event', e, ev.data);
+              console.log("Malformed progress event", e, ev.data);
             }
           });
 
-          es.addEventListener('info', (ev) => {
+          es.addEventListener("info", (ev) => {
             try {
               const info = JSON.parse(ev.data);
-              if (info.title) progressStatus.textContent = `Preparing: ${info.title}`;
-              console.log('Info:', info);
-            } catch (e) { console.log(ev.data); }
+              if (info.title)
+                progressStatus.textContent = `Preparing: ${info.title}`;
+              console.log("Info:", info);
+            } catch (e) {
+              console.log(ev.data);
+            }
           });
 
-          es.addEventListener('started', (ev) => {
-            console.log('Started:', ev.data);
-            progressStatus.textContent = 'Downloading...';
+          es.addEventListener("started", (ev) => {
+            console.log("Started:", ev.data);
+            progressStatus.textContent = "Downloading...";
           });
 
-          es.addEventListener('done', (ev) => {
+          es.addEventListener("done", (ev) => {
             try {
               const d = JSON.parse(ev.data);
-              console.log('Done:', d);
-            } catch (e) { console.log('Done event', ev.data); }
-            progressStatus.textContent = 'Download ready — starting file transfer...';
+              console.log("Done:", d);
+            } catch (e) {
+              console.log("Done event", ev.data);
+            }
+            progressStatus.textContent = "Download ready — starting file transfer...";
             es.close();
             // navigate to file endpoint to download
             window.location.href = `/file/${id}`;
           });
 
-          es.addEventListener('error', (ev) => {
-            console.error('Download error', ev.data);
-            progressStatus.textContent = 'Error during download';
+          es.addEventListener("error", (ev) => {
+            console.error("Download error", ev.data);
+            progressStatus.textContent = "Error during download";
             es.close();
             setBusy(false);
           });
 
           es.onerror = (err) => {
-            console.error('SSE error', err);
-            progressStatus.textContent = 'Connection lost';
+            console.error("SSE error", err);
+            progressStatus.textContent = "Connection lost";
             es.close();
             setBusy(false);
           };
         } catch (err) {
           console.error(err);
-          progressStatus.textContent = 'Failed to start download';
+          progressStatus.textContent = "Failed to start download";
           setBusy(false);
         }
       }
