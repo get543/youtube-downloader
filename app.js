@@ -51,6 +51,18 @@ async function getYtdlpClient() {
 
   ytdlpInstance = new YtDlp({ binaryPath, ffmpegPath });
 
+  // YouTube frequently changes its media URL signing. Keep the bundled
+  // executable current so signed format URLs do not immediately expire or
+  // fail with HTTP 403.
+  try {
+    const update = await ytdlpInstance.updateYtDlpAsync();
+    if (update && update.version) {
+      console.log(`yt-dlp is up to date (${update.version})`);
+    }
+  } catch (updateError) {
+    console.warn("Could not update yt-dlp; using the bundled binary:", updateError);
+  }
+
   const isInstalled = await ytdlpInstance.checkInstallationAsync({ ffmpeg: true });
   if (!isInstalled) {
     throw new Error("yt-dlp or ffmpeg is not installed or available");
@@ -92,7 +104,7 @@ app.get("/download", async (req, res) => {
 
     const filename = path.basename(filePath);
     const stats = await fs.stat(filePath);
-    res.setHeader("Content-Disposition", contentDisposition(filename));
+    res.setHeader("Content-Disposition", contentDisposition.create(filename));
     res.setHeader("Content-Type", "video/mp4");
     res.setHeader("Content-Length", stats.size.toString());
 
@@ -239,7 +251,7 @@ app.get("/file/:id", async (req, res) => {
     if (rec.status !== "done" || !rec.filePath) return res.status(404).send("File not ready");
 
     const filename = path.basename(rec.filePath);
-    res.setHeader("Content-Disposition", contentDisposition(filename));
+    res.setHeader("Content-Disposition", contentDisposition.create(filename));
     res.setHeader("Content-Type", "application/octet-stream");
 
     const stream = fsSync.createReadStream(rec.filePath);
