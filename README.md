@@ -11,13 +11,23 @@ git clone https://github.com/get543/youtube-downloader
 
 2. open the file in the terminal and run
 
-```bash
-# install dependencies
-npm install
+    - Node :
+    ```bash
+    # install dependencies
+    npm install
 
-# run
-npm start
-```
+    # run
+    npm start
+    ```
+
+    - Bun :
+    ```bash
+    # install dependencies
+    bun install
+    
+    # run
+    bun start
+    ```
 
 3. make sure to have ffmpeg and yt-dlp installed on your system
     - Install it on windows
